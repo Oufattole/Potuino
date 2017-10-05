@@ -157,7 +157,7 @@ void txInput()
 		Serial.print(id);
 		Serial.print("\"}");
     Serial.println();
-    boolean sentContent = false;
+    boolean sentContent = false; //parse response for cookie
     www.fastrprint(F("POST "));
     www.fastrprint(WEBPAGE);
     www.fastrprint(F(" HTTP/1.1\r\n"));
@@ -169,6 +169,7 @@ void txInput()
 		www.fastrprint(F("Accept-Encoding: gzip, deflate\r\n"));
 		www.fastrprint(F("Content-Length: 30\r\n")); //IMPORTANT
 		www.fastrprint(F("Content-Type: application/json\r\n"));
+		www.fastrprint(F("Cookie: $cookie\r\n")); //sets cookie
     www.fastrprint(F("\r\n"));
 		www.fastrprint(F("{\"RFID\":\""));
 		www.fastrprint(id);
