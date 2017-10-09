@@ -210,10 +210,10 @@ void txInput()
   Serial.println(F("HTTP Response:"));
   
   unsigned long lastRead = millis();
-  
+  String line = "";
   while (www.connected() && (millis() - lastRead < IDLE_TIMEOUT_MS)) 
   {
-    String line = "";
+    
     boolean currentLineIsBlank = true;
     get_request = "";     
     boolean sentContent = false;
@@ -261,6 +261,7 @@ void txInput()
     }
   }
    www.close();
+   Serial.println(line);
    Serial.println(F("\n----------------------------------------------"));
 }
 
