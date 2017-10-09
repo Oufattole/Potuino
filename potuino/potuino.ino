@@ -11,20 +11,23 @@
   
   Modified by Peter Dalmaris tas part of Udemy's Arduino step by
   Step course and modified again by One of Peter's students.
-	
+  
  ****************************************************/
- 
-#include <RFIDuino.h>
+//include the I2C Wire library - needed for communication with the I2C chip attached to the LCD manual 
+#include <Wire.h> 
+// include the RobotGeekLCD library
+#include "RobotGeekLCD.h"
+#include "RFIDuino.h"
 #include <Adafruit_CC3000.h>
 #include <ccspi.h>
 #include <SPI.h>
 #include <string.h>
-#include "utility/debug.h"
+#include <utility/debug.h>
 
-#define WLAN_SSID "VR_EGGZY"             
-#define WLAN_PASS "12345678"
+#define WLAN_SSID "ARCHER_SLOW_2G"             
+#define WLAN_PASS "smoothpiano245"
 
-#define WEBSITE   "potuinoserver-jdorpinghaus.c9users.io"   //Doesn't like an IP here
+#define WEBSITE   "noufattole.interns.kit.cm"   //Doesn't like an IP here
 //#define WEBSITEIP IPAddress(172,16,100,186)
 #define WEBPORT   80
 #define WEBPAGE   "/"               //A file with "led8=1\n" as the only content
@@ -32,7 +35,6 @@
 #define ADAFRUIT_CC3000_IRQ   3                     
 #define ADAFRUIT_CC3000_VBAT  5
 #define ADAFRUIT_CC3000_CS    10
-
 Adafruit_CC3000 cc3000 = Adafruit_CC3000(ADAFRUIT_CC3000_CS, ADAFRUIT_CC3000_IRQ, ADAFRUIT_CC3000_VBAT,
                                          SPI_CLOCK_DIVIDER);
 boolean reading = false; 
@@ -40,7 +42,7 @@ String  get_request  = "";
 
 #define WLAN_SECURITY   WLAN_SEC_WPA2
 #define IDLE_TIMEOUT_MS  3000     
-
+String cookie = "";
 uint32_t ip;
 Adafruit_CC3000_Client www;
 
@@ -49,14 +51,19 @@ RFIDuino myRFIDuino(1.2);   //initialize an RFIDuino object for hardware version
 byte tagData[5]; //Holds the ID numbers from the tag
 char id[50] = {0};  
 int connectTimeout = 3000;
-int repeat_counter = 0;  
+int repeat_counter = 0; 
+// create a robotgeekLCD object named 'lcd' 
+RobotGeekLCD lcd;
 
 void setup(void)
 {
-
-  Serial.begin (115200);
+  // initialize the lcd object
+  lcd.init();
+  lcd.clear();
+  Serial.begin (9600);
   Serial.println ("Hello, CC3000!\n");
-	Serial.print(id);
+  lcd.print("Initializing");
+  Serial.print(id);
   Serial.print ("Free RAM: "); 
   Serial.println (getFreeRam(), DEC);
   Serial.println ("\nInitializing...");
@@ -67,7 +74,10 @@ void setup(void)
   }
 
   listSSIDResults();
-   
+  lcd.clear();
+   lcd.print("Connecting to");
+   lcd.setCursor(0,1);
+   lcd.print(WLAN_SSID);
   Serial.print("\nAttempting to connect to "); 
   Serial.println(WLAN_SSID);
   if (!cc3000.connectToAP(WLAN_SSID, WLAN_PASS, WLAN_SECURITY)) 
@@ -77,43 +87,56 @@ void setup(void)
   }
   
   Serial.println("Connected!");
-	myRFIDuino.successSound();
+  myRFIDuino.successSound();
   
   Serial.println("Request DHCP");
+  lcd.clear();
+   lcd.print("Request DHCP");
   while (!cc3000.checkDHCP())
   {
     delay(1000);                                    // ToDo: Insert a DHCP timeout!  Why??
   }  
+  Serial.println("DHCP Success");
   while (! displayConnectionDetails()) 
   {
     delay(1000);
   }
-  Serial.println("Welcome to the RFIDuino Serial Example. Please swipe your RFID Tag.");
+  lcd.clear();
+   lcd.print("Welcome!");
+   lcd.setCursor(0,1);
+   lcd.print("Please swipe tag");
+  Serial.println("Welcome. Please swipe your RFID Tag.");
 }
 
-void loop(void)
+void loop()
 {
   //scan for a tag - if a tag is sucesfully scanned, return a 'true' and proceed
+  myRFIDuino.scanForTag(tagData);
   if(myRFIDuino.scanForTag(tagData) == true)
   {
-		digitalWrite(myRFIDuino.led2,HIGH);     //turn green LED on
+    digitalWrite(myRFIDuino.led2,HIGH);     //turn green LED on
     digitalWrite(myRFIDuino.buzzer, HIGH);   //turn the buzzer on
     delay(250);                             //wait for 1 second
     digitalWrite(myRFIDuino.buzzer, LOW);    //turn the buzzer off
     digitalWrite(myRFIDuino.led2,LOW);      //turn the green LED off
     Serial.print("RFID Tag ID:"); //print a header to the Serial port.
-		for(int n=0;n<5;n++)
+    lcd.clear();
+   lcd.print("RFID Tag ID");
+   lcd.setCursor(0,1);
+   
+    for(int n=0;n<5;n++)
     {
+      lcd.print(tagData[n],DEC);
       Serial.print(tagData[n],DEC);  //print the byte in Decimal format
       if(n<4)//only print the comma on the first 4 nunbers
       {
         Serial.print(",");
+        lcd.print(",");
       }
     }
-		Serial.print("\n\r");//return character for next line
+    Serial.print("\n\r");//return character for next line
     format_tag(tagData);
-		txInput();
-		
+    txInput();
   }
 }
 
@@ -147,33 +170,33 @@ void txInput()
     Serial.print("Host: "); 
     Serial.print(WEBSITE); 
     Serial.print("\r\n");
-		Serial.print("Accept: */*\r\n");
-		Serial.print("User-Agent: Potuino\r\n");
-		Serial.print("Accept-Encoding: gzip, deflate\r\n");
-		Serial.print("Content-Length: 26\r\n"); //IMPORTANT
-		Serial.print("Content-Type: application/json\r\n");
+    Serial.print("Accept: */*\r\n");
+    Serial.print("User-Agent: Potuino\r\n");
+    Serial.print("Accept-Encoding: gzip, deflate\r\n");
+    Serial.print("Content-Length: 26\r\n"); //IMPORTANT
+    Serial.print("Content-Type: application/json\r\n");
     Serial.print("\r\n");
-		Serial.print("{\"RFID\":\"");
-		Serial.print(id);
-		Serial.print("\"}");
+    Serial.print("{\"RFID\":\"");
+    Serial.print(id);
+    Serial.print("\"}");
     Serial.println();
-    boolean sentContent = false; //parse response for cookie
+    boolean sentContent = false;
     www.fastrprint(F("POST "));
     www.fastrprint(WEBPAGE);
     www.fastrprint(F(" HTTP/1.1\r\n"));
     www.fastrprint(F("Host: ")); 
     www.fastrprint(WEBSITE); 
     www.fastrprint(F("\r\n"));
-		www.fastrprint(F("Accept: */*\r\n"));
-		www.fastrprint(F("User-Agent: Potuino\r\n"));
-		www.fastrprint(F("Accept-Encoding: gzip, deflate\r\n"));
-		www.fastrprint(F("Content-Length: 30\r\n")); //IMPORTANT
-		www.fastrprint(F("Content-Type: application/json\r\n"));
-		www.fastrprint(F("Cookie: $cookie\r\n")); //sets cookie
+    www.fastrprint(F("Accept: */*\r\n"));
+    www.fastrprint(F("User-Agent: Potuino\r\n"));
+    www.fastrprint(F("Accept-Encoding: gzip, deflate\r\n"));
+    www.fastrprint(F("Content-Length: 30\r\n")); //IMPORTANT
+    www.fastrprint(F("Content-Type: application/json\r\n"));// www.fastrprint(F("Content-Type: application/text\r\n"));
+    //www.fastrprint(F("Cookie: "+ COOKIE +"\r\n")); //sets cookie
     www.fastrprint(F("\r\n"));
-		www.fastrprint(F("{\"RFID\":\""));
-		www.fastrprint(id);
-		www.fastrprint(F("\"}"));
+    www.fastrprint(F("{\"RFID\":\""));
+    www.fastrprint(id);
+    www.fastrprint(F("\"}"));
     www.println();
     Serial.println(F("Request sent"));
   } 
@@ -187,18 +210,23 @@ void txInput()
   Serial.println(F("HTTP Response:"));
   
   unsigned long lastRead = millis();
+  
   while (www.connected() && (millis() - lastRead < IDLE_TIMEOUT_MS)) 
   {
+    String line = "";
     boolean currentLineIsBlank = true;
     get_request = "";     
     boolean sentContent = false;
-    
+    //lcd.clear();
     while (www.available()) 
     { 
       char c = www.read();
       Serial.print(c);
+      line += c;
+      
+   //lcd.print(c);
       lastRead = millis ();
-
+ 
       if(reading && c == '\n') 
       { 
         reading = false;  
@@ -237,38 +265,38 @@ void txInput()
 }
 
 void format_tag(byte array[]){
-	int i, temp;
-	for (i = 0; i < 20; i++){
-		id[i] = 0;
-	}
-	char temp1, temp2, temp3;
-	for (i = 0; i < 5; i++){
-		if(array[i] < 100){
-			if(array[i] < 10){
-				id[(i * 4)] = '0';
-				id[(i * 4) + 1] = '0';
-				id[(i * 4) + 2] = (array[i] + '0');
-			}
-			else {
-				temp = array[i];
-				id[(i * 4)] = '0';
-				id[(i * 4) + 2] = (temp % 10) + '0';
-				temp /= 10;
-				id[(i * 4) + 1] = (temp % 10) + '0';
-			} 
-		}
-		else {
-			temp = array[i];
-			id[(i * 4) + 2] = (temp % 10) + '0';
-			temp /= 10;
-			id[(i * 4) + 1] = (temp % 10) + '0';
-			temp /= 10;
-			id[(i * 4)] = (temp % 10) + '0';
-		}
-		if (i < 4){
-			id[(i * 4) + 3] = '.';
-		}
-	}
+  int i, temp;
+  for (i = 0; i < 20; i++){
+    id[i] = 0;
+  }
+  char temp1, temp2, temp3;
+  for (i = 0; i < 5; i++){
+    if(array[i] < 100){
+      if(array[i] < 10){
+        id[(i * 4)] = '0';
+        id[(i * 4) + 1] = '0';
+        id[(i * 4) + 2] = (array[i] + '0');
+      }
+      else {
+        temp = array[i];
+        id[(i * 4)] = '0';
+        id[(i * 4) + 2] = (temp % 10) + '0';
+        temp /= 10;
+        id[(i * 4) + 1] = (temp % 10) + '0';
+      } 
+    }
+    else {
+      temp = array[i];
+      id[(i * 4) + 2] = (temp % 10) + '0';
+      temp /= 10;
+      id[(i * 4) + 1] = (temp % 10) + '0';
+      temp /= 10;
+      id[(i * 4)] = (temp % 10) + '0';
+    }
+    if (i < 4){
+      id[(i * 4) + 3] = '.';
+    }
+  }
 }
 
 bool displayConnectionDetails (void)
@@ -299,9 +327,9 @@ String parseGetRequest (String &str)
   int led_index = str.indexOf ("led");
   int led_pin = str [led_index + 3] - '0';
   int led_val = str [led_index + 5] - '0';
-	if ((led_pin == 8) && (led_val == 1)){
-		digitalWrite(myRFIDuino.led1, HIGH);
-	}
+  if ((led_pin == 8) && (led_val == 1)){
+    digitalWrite(myRFIDuino.led1, HIGH);
+  }
   //executeInstruction (led_pin, led_val);
   //executeInstruction (13, led_val); // Code above looks to pull just one character for the pin
 }
