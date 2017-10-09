@@ -260,6 +260,8 @@ void txInput()
       }
     }
   }
+  Serial.print ("Free RAM: "); 
+  Serial.println (getFreeRam(), DEC);
    www.close();
    Serial.println(line);
    Serial.println(F("\n----------------------------------------------"));
