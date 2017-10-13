@@ -217,6 +217,9 @@ void txInput()
     www.fastrprint(F("\"}"));
     www.println();
     Serial.println(("Request sent"));
+    cookie = "";
+    cookiep1 = "";
+    cookiep2 = "";//66
   } 
   else 
   {
@@ -226,8 +229,6 @@ void txInput()
 
   Serial.println(F("\n---------------------------------------------"));
   Serial.println(F("HTTP Response:"));
-  Serial.print ("Free RAM: "); 
-  Serial.println (getFreeRam(), DEC);
   unsigned long lastRead = millis();
   String line = "";
   while (www.connected() && (millis() - lastRead < IDLE_TIMEOUT_MS)) 
@@ -240,7 +241,7 @@ void txInput()
     while (www.available()) 
     { 
       char c = www.read();
-      Serial.print(c);
+      //Serial.print(c);
       line += c;
       
    //lcd.print(c);
@@ -249,7 +250,7 @@ void txInput()
       if(reading && c == '\n') 
       { 
         reading = false;  
-        parseGetRequest(get_request);
+        //parseGetRequest(get_request);
         break;
       }        
 
@@ -282,15 +283,21 @@ void txInput()
  // Serial.print ("Free RAM: "); 
  // Serial.println (getFreeRam(), DEC);
    www.close();
-   cookie = line.substring(line.indexOf("Set-Cookie:")+24,line.indexOf("Set-Cookie:")+24+80);
-   cookiep1 = line.substring(line.indexOf("Set-Cookie:")+24+80,line.indexOf("Set-Cookie:")+24+150);
-   cookiep2 = line.substring(line.indexOf("Set-Cookie:")+24+150,line.indexOf("Set-Cookie:")+24+191);//66
-   Serial.print("\n\n cococococ\n"+cookie);
-   Serial.print(cookiep1);
-   Serial.print(cookiep2);
+   Serial.println(line);
+   int x = line.indexOf("Set-Cookie:");
+   if(line.indexOf("logged in")>0)
+   {
+    cookie = line.substring(x+24,x+24+80);
+    cookiep1 = line.substring(x+24+80,x+24+150);
+    cookiep2 = line.substring(x+24+150,x+24+191);//66
+   }
+   line = "";
+   //Serial.print("\n\n cococococ\n"+cookie);
+   //Serial.print(cookiep1);
+   //Serial.print(cookiep2);
    
    //Serial.println("cooke equals \n\n\n" +cookie+"ayyy\n" + line.indexOf("Set-Cookie:"));
-   String coke(cookie.c_str());
+   //String coke(cookie.c_str());
    //Serial.println(coke);
    Serial.println(F("\n----------------------------------------------"));
 }
