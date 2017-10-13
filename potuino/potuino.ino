@@ -43,6 +43,8 @@ String  get_request  = "";
 #define WLAN_SECURITY   WLAN_SEC_WPA2
 #define IDLE_TIMEOUT_MS  3000     
 String cookie = "";
+String cookiep1 = "";
+String cookiep2 = "";
 uint32_t ip;
 Adafruit_CC3000_Client www;
 
@@ -161,9 +163,11 @@ void txInput()
   cc3000.printIPdotsRev(ip);
 
   Adafruit_CC3000_Client www = cc3000.connectTCP(ip, WEBPORT);
-  
+  Serial.println(id);
+  Serial.println(id);
   if (www.connected()) 
   {
+    //Serial.print ("cooke equals \n\n\n" +cookie);
     Serial.print("POST ");
     Serial.print(WEBPAGE);
     Serial.print(" HTTP/1.1\r\n");
@@ -175,6 +179,7 @@ void txInput()
     Serial.print("Accept-Encoding: gzip, deflate\r\n");
     Serial.print("Content-Length: 26\r\n"); //IMPORTANT
     Serial.print("Content-Type: application/json\r\n");
+    Serial.print("Cookie: "+ cookie+cookiep1+cookiep2 +"\r\n"); //states cookie
     Serial.print("\r\n");
     Serial.print("{\"RFID\":\"");
     Serial.print(id);
@@ -192,13 +197,26 @@ void txInput()
     www.fastrprint(F("Accept-Encoding: gzip, deflate\r\n"));
     www.fastrprint(F("Content-Length: 30\r\n")); //IMPORTANT
     www.fastrprint(F("Content-Type: application/json\r\n"));// www.fastrprint(F("Content-Type: application/text\r\n"));
-    //www.fastrprint(F("Cookie: "+ COOKIE +"\r\n")); //sets cookie
+    //char sendcookie[] = cookie.toCharArray;
+    if(cookie!="")
+    {
+      www.fastrprint(F("Cookie: mojolicious="));
+      www.fastrprint(cookie.c_str());
+      www.fastrprint(cookiep1.c_str());
+      www.fastrprint(cookiep2.c_str());
+      www.fastrprint(F("\r\n"));//sets cookie ("Cookie: "+ cookie +"\r\n")  
+    //www.fastrprint(F("Cookie: "+ sendcookie +"\r\n"));
+    }
     www.fastrprint(F("\r\n"));
     www.fastrprint(F("{\"RFID\":\""));
+    //if(cookie==""){
+    //www.fastrprint("1.1.1");}
+    //else{
+    //www.fastrprint("2.2.2");}//
     www.fastrprint(id);
     www.fastrprint(F("\"}"));
     www.println();
-    Serial.println(F("Request sent"));
+    Serial.println(("Request sent"));
   } 
   else 
   {
@@ -208,7 +226,8 @@ void txInput()
 
   Serial.println(F("\n---------------------------------------------"));
   Serial.println(F("HTTP Response:"));
-  
+  Serial.print ("Free RAM: "); 
+  Serial.println (getFreeRam(), DEC);
   unsigned long lastRead = millis();
   String line = "";
   while (www.connected() && (millis() - lastRead < IDLE_TIMEOUT_MS)) 
@@ -260,10 +279,19 @@ void txInput()
       }
     }
   }
-  Serial.print ("Free RAM: "); 
-  Serial.println (getFreeRam(), DEC);
+ // Serial.print ("Free RAM: "); 
+ // Serial.println (getFreeRam(), DEC);
    www.close();
-   Serial.println(line);
+   cookie = line.substring(line.indexOf("Set-Cookie:")+24,line.indexOf("Set-Cookie:")+24+80);
+   cookiep1 = line.substring(line.indexOf("Set-Cookie:")+24+80,line.indexOf("Set-Cookie:")+24+150);
+   cookiep2 = line.substring(line.indexOf("Set-Cookie:")+24+150,line.indexOf("Set-Cookie:")+24+191);//66
+   Serial.print("\n\n cococococ\n"+cookie);
+   Serial.print(cookiep1);
+   Serial.print(cookiep2);
+   
+   //Serial.println("cooke equals \n\n\n" +cookie+"ayyy\n" + line.indexOf("Set-Cookie:"));
+   String coke(cookie.c_str());
+   //Serial.println(coke);
    Serial.println(F("\n----------------------------------------------"));
 }
 
