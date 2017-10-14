@@ -77,9 +77,7 @@ void setup(void)
 
   listSSIDResults();
   lcd.clear();
-   lcd.print("Connecting to");
-   lcd.setCursor(0,1);
-   lcd.print(WLAN_SSID);
+   lcd.print("Connecting");
   Serial.print("\nAttempting to connect to "); 
   Serial.println(WLAN_SSID);
   if (!cc3000.connectToAP(WLAN_SSID, WLAN_PASS, WLAN_SECURITY)) 
@@ -92,8 +90,6 @@ void setup(void)
   myRFIDuino.successSound();
   
   Serial.println("Request DHCP");
-  lcd.clear();
-   lcd.print("Request DHCP");
   while (!cc3000.checkDHCP())
   {
     delay(1000);                                    // ToDo: Insert a DHCP timeout!  Why??
@@ -103,15 +99,16 @@ void setup(void)
   {
     delay(1000);
   }
-  lcd.clear();
-   lcd.print("Welcome!");
-   lcd.setCursor(0,1);
-   lcd.print("Please swipe tag");
   Serial.println("Welcome. Please swipe your RFID Tag.");
 }
 
 void loop()
 {
+    lcd.clear();
+    lcd.setCursor(0,0);
+     lcd.print("Scan book:return");
+     lcd.setCursor(0,1);
+     lcd.print("Or tag+book:take");
   //scan for a tag - if a tag is sucesfully scanned, return a 'true' and proceed
   myRFIDuino.scanForTag(tagData);
   if(myRFIDuino.scanForTag(tagData) == true)
@@ -122,21 +119,23 @@ void loop()
     digitalWrite(myRFIDuino.buzzer, LOW);    //turn the buzzer off
     digitalWrite(myRFIDuino.led2,LOW);      //turn the green LED off
     Serial.print("RFID Tag ID:"); //print a header to the Serial port.
-    lcd.clear();
-   lcd.print("RFID Tag ID");
-   lcd.setCursor(0,1);
    
     for(int n=0;n<5;n++)
     {
-      lcd.print(tagData[n],DEC);
+      //lcd.print(tagData[n],DEC);
       Serial.print(tagData[n],DEC);  //print the byte in Decimal format
       if(n<4)//only print the comma on the first 4 nunbers
       {
         Serial.print(",");
-        lcd.print(",");
+        //lcd.print(",");
       }
     }
     Serial.print("\n\r");//return character for next line
+    lcd.clear();
+    lcd.setCursor(0,0);
+     lcd.print("Successful Scan");
+     lcd.setCursor(0,1);
+     lcd.print("Processing");
     format_tag(tagData);
     txInput();
   }
@@ -196,30 +195,24 @@ void txInput()
     www.fastrprint(F("User-Agent: Potuino\r\n"));
     www.fastrprint(F("Accept-Encoding: gzip, deflate\r\n"));
     www.fastrprint(F("Content-Length: 30\r\n")); //IMPORTANT
-    www.fastrprint(F("Content-Type: application/json\r\n"));// www.fastrprint(F("Content-Type: application/text\r\n"));
-    //char sendcookie[] = cookie.toCharArray;
+    www.fastrprint(F("Content-Type: application/json\r\n"));
     if(cookie!="")
     {
       www.fastrprint(F("Cookie: mojolicious="));
       www.fastrprint(cookie.c_str());
       www.fastrprint(cookiep1.c_str());
       www.fastrprint(cookiep2.c_str());
-      www.fastrprint(F("\r\n"));//sets cookie ("Cookie: "+ cookie +"\r\n")  
-    //www.fastrprint(F("Cookie: "+ sendcookie +"\r\n"));
+      www.fastrprint(F("\r\n"));//sets cookie and turns cookie strings into sendable character arrays
     }
     www.fastrprint(F("\r\n"));
     www.fastrprint(F("{\"RFID\":\""));
-    //if(cookie==""){
-    //www.fastrprint("1.1.1");}
-    //else{
-    //www.fastrprint("2.2.2");}//
     www.fastrprint(id);
     www.fastrprint(F("\"}"));
     www.println();
     Serial.println(("Request sent"));
     cookie = "";
     cookiep1 = "";
-    cookiep2 = "";//66
+    cookiep2 = "";
   } 
   else 
   {
@@ -285,20 +278,24 @@ void txInput()
    www.close();
    Serial.println(line);
    int x = line.indexOf("Set-Cookie:");
-   if(line.indexOf("logged in")>0)
+   if(line.indexOf("logged in")>0) //if cookie exists will save it and split it into 3 pieces
    {
+    lcd.clear();
+    lcd.print("logged in");
     cookie = line.substring(x+24,x+24+80);
     cookiep1 = line.substring(x+24+80,x+24+150);
     cookiep2 = line.substring(x+24+150,x+24+191);//66
    }
+   else
+   {
+       int p2=line.lastIndexOf("\"");
+       int p1 = line.lastIndexOf("\"");
+       String resp = line.substring(p1,p2);
+       lcd.clear();
+       lcd.print(resp);
+   }
    line = "";
-   //Serial.print("\n\n cococococ\n"+cookie);
-   //Serial.print(cookiep1);
-   //Serial.print(cookiep2);
-   
-   //Serial.println("cooke equals \n\n\n" +cookie+"ayyy\n" + line.indexOf("Set-Cookie:"));
-   //String coke(cookie.c_str());
-   //Serial.println(coke);
+
    Serial.println(F("\n----------------------------------------------"));
 }
 
@@ -411,4 +408,3 @@ void listSSIDResults(void)
 
   cc3000.stopSSIDscan();
 }
-
