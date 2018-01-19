@@ -100,15 +100,16 @@ void setup(void)
     delay(1000);
   }
   Serial.println("Welcome. Please swipe your RFID Tag.");
-}
-
-void loop()
-{
-    lcd.clear();
+  lcd.clear();
     lcd.setCursor(0,0);
      lcd.print("Scan book:return");
      lcd.setCursor(0,1);
      lcd.print("Or tag+book:take");
+}
+
+void loop()
+{
+    
   //scan for a tag - if a tag is sucesfully scanned, return a 'true' and proceed
   myRFIDuino.scanForTag(tagData);
   if(myRFIDuino.scanForTag(tagData) == true)
