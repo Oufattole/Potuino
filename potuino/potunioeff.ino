@@ -217,7 +217,7 @@ void txInput()
    else
    {
        int p2=line.lastIndexOf("\"");
-       int p1 = line.lastIndexOf("\"");
+       int p1 = line.substring(0,p2).lastIndexOf("\"")+1;
        String resp = line.substring(p1,p2);
        lcd.clear();
        lcd.print(resp);
